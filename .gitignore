@@ -1,0 +1,19 @@
+# Generated data (regenerate with `xkcdai build`)
+data/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# fastembed model cache (if pointed inside repo)
+.fastembed_cache/
+
+scratchpad/
+
+.vscode/
