@@ -76,15 +76,65 @@ The server runs over stdio. Point your MCP host at it.
 }
 ```
 
-**Claude Code:**
+**Claude Code** (`-s user` makes it available in every project, not just this folder):
 
 ```bash
-claude mcp add xkcdai -- C:\Users\papju\claude\xkcdai\.venv\Scripts\xkcdai-server.exe
+claude mcp add xkcdai -s user -e XKCDAI_DATA_DIR=C:\Users\papju\claude\xkcdai\data -- C:\Users\papju\claude\xkcdai\.venv\Scripts\xkcdai-server.exe
 ```
 
-(or `python -m xkcdai.server` with the venv's Python). Set `XKCDAI_DATA_DIR` if
-the index lives somewhere other than `./data`, since the host launches the server
-from an arbitrary working directory.
+Always set `XKCDAI_DATA_DIR`, since the host launches the server from an arbitrary
+working directory.
+
+> MCP only gives Claude the *ability* to call `find_xkcd`; it won't do so on its
+> own. To make it proactively suggest comics, add an instruction to your
+> `CLAUDE.md` (e.g. "when a topic fits, call `find_xkcd` and mention the comic if
+> the score is high"). Restart the session for config/CLAUDE.md changes to load.
+
+## Share it on a phone (host as a Claude custom connector)
+
+A local stdio server only works on the machine it runs on. To use it on a phone,
+host the **HTTP** build publicly and add it as a Claude **custom connector** — which
+works in the Claude web and **mobile** apps (Free plan allows one connector; Pro/Max
+more). You host it **once** and anyone can add the same URL in their own account.
+
+The server already speaks HTTP when `XKCDAI_TRANSPORT=streamable-http`, serving MCP
+at `/mcp` on `0.0.0.0:$PORT`. The [Dockerfile](Dockerfile) bakes in the prebuilt
+index and embedding model. First make sure the index exists locally
+(`xkcdai build && xkcdai enrich && xkcdai build`), then deploy:
+
+**Option A — Fly.io** (builds remotely, so no local Docker, and ships the gitignored
+`data/` straight from your folder):
+
+```bash
+fly launch --no-deploy      # creates fly.toml; set internal_port = 8000
+fly deploy                  # -> https://<app>.fly.dev
+```
+
+**Option B — Render** (free, no card; needs the repo on GitHub *with the index*):
+
+```bash
+git init && git add -A && git add -f data/*.json && git commit -m "deploy"
+# push to GitHub, then on render.com: New > Web Service > your repo,
+# Runtime = Docker. Render gives https://<app>.onrender.com
+```
+
+Then, in **claude.ai** (web — do this once; it then syncs to the mobile app):
+
+1. **Settings → Connectors → Add custom connector**.
+2. Paste the server URL **with the `/mcp` path**, e.g. `https://<your-host>/mcp`.
+3. Leave OAuth blank (this server needs no auth) and click **Add**.
+4. On the phone, open the Claude app → in a chat the connector's `find_xkcd` tool
+   is now available. (Add the same `CLAUDE.md`-style nudge in the app's settings/
+   project instructions if you want it to fire proactively.)
+
+Share the `https://<your-host>/mcp` URL with anyone — they repeat steps 1–4 in
+their own Claude account.
+
+**Notes**
+- The server is **public and unauthenticated** — fine here (read-only comic search,
+  no secrets). Don't put anything sensitive behind this pattern without OAuth.
+- Free hosts sleep when idle, so the first request after a nap is slow (cold start
+  + model load); it's snappy afterward.
 
 ## Configuration
 

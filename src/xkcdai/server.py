@@ -1,17 +1,28 @@
 """MCP server exposing a single tool that finds a relevant xkcd comic.
 
-Run it directly for a quick check:
-    python -m xkcdai.server
-or register it with an MCP host (see README) which will launch it over stdio.
+Two transports, selected by the ``XKCDAI_TRANSPORT`` environment variable:
+
+  * ``stdio`` (default) — for local hosts like Claude Code / Claude Desktop, which
+    launch this as a subprocess.  ``python -m xkcdai.server``
+  * ``streamable-http`` — for hosting publicly so it can be added as a Claude
+    *custom connector* (works on the web + mobile apps). Binds ``0.0.0.0:$PORT``
+    and serves MCP at ``/mcp``. See the Dockerfile and README "Share it" section.
 """
 
 from __future__ import annotations
+
+import os
 
 from mcp.server.fastmcp import FastMCP
 
 from .search import DEFAULT_MIN_SCORE, get_searcher
 
-mcp = FastMCP("xkcdai")
+# host/port only matter for the HTTP transport; harmless for stdio.
+mcp = FastMCP(
+    "xkcdai",
+    host=os.environ.get("HOST", "0.0.0.0"),
+    port=int(os.environ.get("PORT", "8000")),
+)
 
 
 @mcp.tool()
@@ -60,7 +71,13 @@ def find_xkcd(
 
 
 def main() -> None:
-    mcp.run()  # stdio transport by default
+    transport = os.environ.get("XKCDAI_TRANSPORT", "stdio").lower().replace("_", "-")
+    if transport in ("http", "streamable-http"):
+        mcp.run(transport="streamable-http")
+    elif transport == "sse":
+        mcp.run(transport="sse")
+    else:
+        mcp.run()  # stdio
 
 
 if __name__ == "__main__":

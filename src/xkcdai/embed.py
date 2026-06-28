@@ -22,9 +22,14 @@ _model = None
 def _get_model():
     global _model
     if _model is None:
+        import os
+
         from fastembed import TextEmbedding  # imported lazily; heavy import
 
-        _model = TextEmbedding(model_name=MODEL_NAME)
+        # FASTEMBED_CACHE_DIR lets a container bake the model into a stable path at
+        # build time (see Dockerfile), avoiding a download on every cold start.
+        cache_dir = os.environ.get("FASTEMBED_CACHE_DIR") or None
+        _model = TextEmbedding(model_name=MODEL_NAME, cache_dir=cache_dir)
     return _model
 
 

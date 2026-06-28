@@ -1,0 +1,19 @@
+# Keep the build context small — but DO include data/ (the prebuilt index),
+# which is gitignored yet must ship in the image.
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.git/
+.gitignore
+.vscode/
+scratchpad/
+models/
+.fastembed_cache/
+*.md
+!README.md

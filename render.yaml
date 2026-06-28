@@ -1,0 +1,14 @@
+# Render blueprint. On render.com: New > Blueprint > pick this repo, or
+# New > Web Service > pick repo and it auto-detects the Dockerfile.
+# Render injects PORT automatically; the server reads it and binds 0.0.0.0.
+services:
+  - type: web
+    name: xkcdai
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      # Serve MCP over HTTP at /mcp (also set in the Dockerfile; explicit here too).
+      - key: XKCDAI_TRANSPORT
+        value: streamable-http
