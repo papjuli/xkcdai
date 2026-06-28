@@ -85,10 +85,36 @@ claude mcp add xkcdai -s user -e XKCDAI_DATA_DIR=C:\Users\papju\claude\xkcdai\da
 Always set `XKCDAI_DATA_DIR`, since the host launches the server from an arbitrary
 working directory.
 
-> MCP only gives Claude the *ability* to call `find_xkcd`; it won't do so on its
-> own. To make it proactively suggest comics, add an instruction to your
-> `CLAUDE.md` (e.g. "when a topic fits, call `find_xkcd` and mention the comic if
-> the score is high"). Restart the session for config/CLAUDE.md changes to load.
+> MCP only gives Claude the *ability* to call `find_xkcd` — it won't volunteer
+> comics on its own. See [Make Claude suggest comics proactively](#make-claude-suggest-comics-proactively).
+
+## Make Claude suggest comics proactively
+
+Connecting the server only gives Claude the *ability* to call `find_xkcd`; it
+won't reach for it unprompted. To make Claude volunteer comics, paste the
+instruction below wherever that Claude reads persistent instructions:
+
+- **Claude Code** — your global `~/.claude/CLAUDE.md` (applies everywhere) or a
+  per-repo `CLAUDE.md`; restart the session to load changes.
+- **Claude.ai / Claude Desktop** — Settings → Profile → *"What personal preferences
+  should Claude consider in responses?"* (every plan, including free; syncs to the
+  mobile app). Each person who uses the connector adds it in their own account.
+
+```text
+When a conversation naturally lands on a topic xkcd is known for — programming,
+science, math, statistics, engineering, the absurdity of standards, relationships,
+everyday life — call the find_xkcd tool (xkcdai) with a short phrase describing the
+topic. Then judge whether to bring it up:
+- score >= 0.75 — strong match; mention it if it fits the moment
+- 0.66-0.75 — only if it genuinely lands
+- below that — stay silent
+When you share one, give just that single comic: its number and title, its URL, and
+quote the alt (mouseover) text — that's half the joke. At most one comic per topic,
+and never force a tangential reference. When in doubt, say nothing.
+```
+
+It's still Claude's judgment, so it won't fire on every borderline topic — asking
+*"is there an xkcd for this?"* always triggers a lookup.
 
 ## Share it on a phone (host as a Claude custom connector)
 
@@ -124,8 +150,9 @@ Then, in **claude.ai** (web — do this once; it then syncs to the mobile app):
 2. Paste the server URL **with the `/mcp` path**, e.g. `https://<your-host>/mcp`.
 3. Leave OAuth blank (this server needs no auth) and click **Add**.
 4. On the phone, open the Claude app → in a chat the connector's `find_xkcd` tool
-   is now available. (Add the same `CLAUDE.md`-style nudge in the app's settings/
-   project instructions if you want it to fire proactively.)
+   is now available. (For it to fire proactively, add the instruction from
+   [Make Claude suggest comics proactively](#make-claude-suggest-comics-proactively)
+   to your claude.ai Profile preferences.)
 
 Share the `https://<your-host>/mcp` URL with anyone — they repeat steps 1–4 in
 their own Claude account.
