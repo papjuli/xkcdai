@@ -3,6 +3,9 @@
 An **MCP server** that surfaces the right [xkcd](https://xkcd.com) comic during a
 conversation, if one is relevant.
 
+> **Live connector:** `https://xkcdai.onrender.com/mcp` — add it in claude.ai →
+> Settings → Connectors. See [Use it on the web or phone](#use-it-on-the-web-or-phone-custom-connector).
+
 It builds a local semantic index over every xkcd comic (title + mouseover text +
 transcript) using on-device embeddings, then exposes a single `find_xkcd` tool.
 A Claude conversation can call it whenever the topic feels xkcd-shaped; a
@@ -116,52 +119,33 @@ and never force a tangential reference. When in doubt, say nothing.
 It's still Claude's judgment, so it won't fire on every borderline topic — asking
 *"is there an xkcd for this?"* always triggers a lookup.
 
-## Share it on a phone (host as a Claude custom connector)
+## Use it on the web or phone (custom connector)
 
-A local stdio server only works on the machine it runs on. To use it on a phone,
-host the **HTTP** build publicly and add it as a Claude **custom connector** — which
-works in the Claude web and **mobile** apps (Free plan allows one connector; Pro/Max
-more). You host it **once** and anyone can add the same URL in their own account.
+The server is deployed at **https://xkcdai.onrender.com**. Add it as a Claude
+**custom connector** to use it in the Claude web and **mobile** apps (custom
+connectors work on every plan; Free allows one). Anyone can add the same URL in
+their own account.
 
-The server already speaks HTTP when `XKCDAI_TRANSPORT=streamable-http`, serving MCP
-at `/mcp` on `0.0.0.0:$PORT`. The [Dockerfile](Dockerfile) bakes in the prebuilt
-index and embedding model. First make sure the index exists locally
-(`xkcdai build && xkcdai enrich && xkcdai build`), then deploy:
-
-**Option A — Fly.io** (builds remotely, so no local Docker, and ships the gitignored
-`data/` straight from your folder):
-
-```bash
-fly launch --no-deploy      # creates fly.toml; set internal_port = 8000
-fly deploy                  # -> https://<app>.fly.dev
-```
-
-**Option B — Render** (free, no card; needs the repo on GitHub *with the index*):
-
-```bash
-git init && git add -A && git add -f data/*.json && git commit -m "deploy"
-# push to GitHub, then on render.com: New > Web Service > your repo,
-# Runtime = Docker. Render gives https://<app>.onrender.com
-```
-
-Then, in **claude.ai** (web — do this once; it then syncs to the mobile app):
+In **claude.ai** (web — do this once; it then syncs to the mobile app):
 
 1. **Settings → Connectors → Add custom connector**.
-2. Paste the server URL **with the `/mcp` path**, e.g. `https://<your-host>/mcp`.
+2. Paste the connector URL, **including the `/mcp` path**: `https://xkcdai.onrender.com/mcp`
 3. Leave OAuth blank (this server needs no auth) and click **Add**.
-4. On the phone, open the Claude app → in a chat the connector's `find_xkcd` tool
-   is now available. (For it to fire proactively, add the instruction from
+4. The connector's `find_xkcd` tool is now available in chats, on desktop and phone.
+   For Claude to suggest comics on its own, also add the instruction from
    [Make Claude suggest comics proactively](#make-claude-suggest-comics-proactively)
-   to your claude.ai Profile preferences.)
+   to your Profile preferences.
 
-Share the `https://<your-host>/mcp` URL with anyone — they repeat steps 1–4 in
-their own Claude account.
+To share it, send someone `https://xkcdai.onrender.com/mcp` and have them repeat
+steps 1–4 in their own Claude account.
 
 **Notes**
 - The server is **public and unauthenticated** — fine here (read-only comic search,
-  no secrets). Don't put anything sensitive behind this pattern without OAuth.
-- Free hosts sleep when idle, so the first request after a nap is slow (cold start
-  + model load); it's snappy afterward.
+  no secrets). Don't reuse this pattern for anything sensitive without OAuth.
+- The free Render instance sleeps when idle, so the first request after a nap is
+  slow (cold start + model load), then snappy.
+- Hosted from this repo via the [Dockerfile](Dockerfile) and [render.yaml](render.yaml);
+  pushes to `main` auto-redeploy.
 
 ## Configuration
 
