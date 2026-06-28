@@ -4,13 +4,16 @@ An **MCP server** that surfaces the right [xkcd](https://xkcd.com) comic during 
 conversation, if one is relevant.
 
 > **Live connector:** `https://xkcdai.onrender.com/mcp` — add it in claude.ai →
-> Settings → Connectors. See [Use it on the web or phone](#use-it-on-the-web-or-phone-custom-connector).
+> Settings → Connectors. See [Use the deployed MCP server](#use-the-deployed-mcp-server-as-custom-connector).
 
-It builds a local semantic index over every xkcd comic (title + mouseover text +
+It builds a semantic index over every xkcd comic (title + mouseover text +
 transcript) using on-device embeddings, then exposes a single `find_xkcd` tool.
 A Claude conversation can call it whenever the topic feels xkcd-shaped; a
 relevance threshold means weak matches return nothing, so it stays quiet instead
 of forcing a tenuous reference.
+
+The fetched transcripts, explanations, and the embeddings are currently committed in this repo, under [data/](data/).
+
 
 ## How it works
 
@@ -37,7 +40,33 @@ explainxkcd  ──┘        (cache)                    (bge-small)     (cosine
   floor; the real "should I bring this up?" decision is made by the calling model,
   guided by the score bands documented on the `find_xkcd` tool.
 
-## Setup
+
+## Use the deployed MCP server (as custom connector)
+
+The server is deployed at **https://xkcdai.onrender.com** on Render. Add it as a Claude
+**custom connector** to use it in the Claude web and mobile apps (note: the Free plan only allows one custom connector).
+Anyone can add the same URL in their own account.
+
+In **claude.ai** (web — do this once; it then syncs to the mobile app):
+
+1. **Settings → Connectors → Add custom connector**.
+2. Paste the connector URL, **including the `/mcp` path**: `https://xkcdai.onrender.com/mcp`
+3. Leave OAuth blank (this server needs no auth) and click **Add**.
+4. The connector's `find_xkcd` tool is now available in chats, on desktop and phone.
+   For Claude to suggest comics on its own, also add the instruction from
+   [Make Claude suggest comics proactively](#make-claude-suggest-comics-proactively)
+   to your Profile preferences.
+
+**Notes**
+- The server is **public and unauthenticated** — fine here (read-only comic search,
+  no secrets). Don't reuse this pattern for anything sensitive without OAuth.
+- A free Render instance sleeps when idle, so the first request after a nap is
+  slow (cold start + model load), then snappy.
+- Hosted from this repo via the [Dockerfile](Dockerfile) and [render.yaml](render.yaml);
+  pushes to `main` auto-redeploy.
+
+
+## Local setup
 
 ```bash
 python -m venv .venv
@@ -46,13 +75,16 @@ python -m venv .venv
 pip install -e .
 
 # 1. Fetch every comic's metadata.
-# 2. Fetch transcripts + explanations from explainxkcd (~2 min, be patient & polite).
+xkcdai build
+
+# 2. Fetch transcripts + explanations from explainxkcd (~2 min).
+xkcdai enrich
+
 # 3. Build the embedding index (downloads the model once; ~5-8 min to embed).
-# Re-running later only fetches what's new.
-xkcdai build          # fetch comic metadata
-xkcdai enrich         # fetch explainxkcd context
-xkcdai build          # embed everything into the index
+xkcdai build
 ```
+
+Re-running later only fetches what's new.
 
 Test it from the command line:
 
@@ -62,7 +94,8 @@ xkcdai search "arguing about the correct date format"
 xkcdai search "spent more time automating it than doing it by hand"
 ```
 
-## Use as an MCP server
+
+## Use locally as an MCP server
 
 The server runs over stdio. Point your MCP host at it.
 
@@ -72,8 +105,8 @@ The server runs over stdio. Point your MCP host at it.
 {
   "mcpServers": {
     "xkcdai": {
-      "command": "C:\\Users\\papju\\claude\\xkcdai\\.venv\\Scripts\\xkcdai-server.exe",
-      "env": { "XKCDAI_DATA_DIR": "C:\\Users\\papju\\claude\\xkcdai\\data" }
+      "command": "C:\\your\\path\\to\\xkcdai\\.venv\\Scripts\\xkcdai-server.exe",
+      "env": { "XKCDAI_DATA_DIR": "C:\\your\\path\\to\\xkcdai\\data" }
     }
   }
 }
@@ -82,7 +115,7 @@ The server runs over stdio. Point your MCP host at it.
 **Claude Code** (`-s user` makes it available in every project, not just this folder):
 
 ```bash
-claude mcp add xkcdai -s user -e XKCDAI_DATA_DIR=C:\Users\papju\claude\xkcdai\data -- C:\Users\papju\claude\xkcdai\.venv\Scripts\xkcdai-server.exe
+claude mcp add xkcdai -s user -e XKCDAI_DATA_DIR=C:\your\path\to\xkcdai\data -- C:\your\path\to\xkcdai\.venv\Scripts\xkcdai-server.exe
 ```
 
 Always set `XKCDAI_DATA_DIR`, since the host launches the server from an arbitrary
@@ -90,6 +123,7 @@ working directory.
 
 > MCP only gives Claude the *ability* to call `find_xkcd` — it won't volunteer
 > comics on its own. See [Make Claude suggest comics proactively](#make-claude-suggest-comics-proactively).
+
 
 ## Make Claude suggest comics proactively
 
@@ -119,33 +153,6 @@ and never force a tangential reference. When in doubt, say nothing.
 It's still Claude's judgment, so it won't fire on every borderline topic — asking
 *"is there an xkcd for this?"* always triggers a lookup.
 
-## Use it on the web or phone (custom connector)
-
-The server is deployed at **https://xkcdai.onrender.com**. Add it as a Claude
-**custom connector** to use it in the Claude web and **mobile** apps (custom
-connectors work on every plan; Free allows one). Anyone can add the same URL in
-their own account.
-
-In **claude.ai** (web — do this once; it then syncs to the mobile app):
-
-1. **Settings → Connectors → Add custom connector**.
-2. Paste the connector URL, **including the `/mcp` path**: `https://xkcdai.onrender.com/mcp`
-3. Leave OAuth blank (this server needs no auth) and click **Add**.
-4. The connector's `find_xkcd` tool is now available in chats, on desktop and phone.
-   For Claude to suggest comics on its own, also add the instruction from
-   [Make Claude suggest comics proactively](#make-claude-suggest-comics-proactively)
-   to your Profile preferences.
-
-To share it, send someone `https://xkcdai.onrender.com/mcp` and have them repeat
-steps 1–4 in their own Claude account.
-
-**Notes**
-- The server is **public and unauthenticated** — fine here (read-only comic search,
-  no secrets). Don't reuse this pattern for anything sensitive without OAuth.
-- The free Render instance sleeps when idle, so the first request after a nap is
-  slow (cold start + model load), then snappy.
-- Hosted from this repo via the [Dockerfile](Dockerfile) and [render.yaml](render.yaml);
-  pushes to `main` auto-redeploy.
 
 ## Configuration
 
@@ -153,6 +160,7 @@ steps 1–4 in their own Claude account.
   `index.json` live.
 - `find_xkcd(context, max_results=3, min_score=0.62)` — lower `min_score` for more
   (looser) suggestions, raise it to be stricter.
+
 
 ## Maintenance
 
