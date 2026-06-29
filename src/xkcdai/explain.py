@@ -13,6 +13,7 @@ a descriptive User-Agent, and cache aggressively (only fetch numbers we're missi
 from __future__ import annotations
 
 import json
+import logging
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -21,6 +22,8 @@ from tqdm import tqdm
 
 from .data import load_cache
 from .paths import data_dir
+
+logger = logging.getLogger(__name__)
 
 API_URL = "https://www.explainxkcd.com/wiki/api.php"
 
@@ -97,17 +100,26 @@ def _fetch_one(client: httpx.Client, num: int) -> dict | None:
         resp = client.get(API_URL, params=params, timeout=30)
         resp.raise_for_status()
         data = resp.json()
-    except (httpx.HTTPError, json.JSONDecodeError):
+    except (httpx.HTTPError, json.JSONDecodeError) as e:
+        logger.warning("explainxkcd fetch failed for #%d: %s", num, e)
         return None
     parse = data.get("parse")
     if not parse:
+        logger.debug("explainxkcd returned no wikitext for #%d", num)
         return None
     wt = parse.get("wikitext", "")
     transcript = _strip_markup(_section(wt, "Transcript"))
     explanation = _strip_markup(_section(wt, "Explanation"))
     if len(explanation) > EXPLANATION_MAX_CHARS:
+        logger.debug(
+            "explanation for #%d is %d chars; truncating to %d",
+            num,
+            len(explanation),
+            EXPLANATION_MAX_CHARS,
+        )
         explanation = explanation[:EXPLANATION_MAX_CHARS].rsplit(" ", 1)[0]
     if not transcript and not explanation:
+        logger.debug("no transcript or explanation found for #%d", num)
         return None
     return {"transcript": transcript, "explanation": explanation}
 
@@ -121,13 +133,14 @@ def update_explain(workers: int = 6, force: bool = False) -> dict[int, dict]:
 
     missing = [n for n in sorted(comics) if n not in cached]
     if not missing:
-        print(f"explainxkcd cache is up to date ({len(cached)} entries).")
+        logger.info("explainxkcd cache is up to date (%d entries).", len(cached))
         return cached
 
     headers = {
         "User-Agent": "xkcdai/0.1 (semantic xkcd suggester; contact: papjuli@gmail.com)"
     }
-    print(f"Fetching explainxkcd context for {len(missing)} comic(s)...")
+    logger.info("Fetching explainxkcd context for %d comic(s)...", len(missing))
+    skipped = 0
     with httpx.Client(headers=headers, follow_redirects=True) as client:
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures = {pool.submit(_fetch_one, client, n): n for n in missing}
@@ -136,7 +149,16 @@ def update_explain(workers: int = 6, force: bool = False) -> dict[int, dict]:
                 doc = fut.result()
                 if doc is not None:
                     cached[num] = doc
+                else:
+                    skipped += 1
 
+    if skipped:
+        logger.info(
+            "%d comic(s) had no usable explainxkcd content (use -v for details).",
+            skipped,
+        )
     save_explain(cached)
-    print(f"Cached explainxkcd context for {len(cached)} comics -> {explain_path()}")
+    logger.info(
+        "Cached explainxkcd context for %d comics -> %s", len(cached), explain_path()
+    )
     return cached

@@ -8,6 +8,7 @@ caller can simply stay quiet.
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, asdict
 
 import numpy as np
@@ -15,6 +16,8 @@ import numpy as np
 from . import embed
 from .data import load_cache
 from .paths import embeddings_path, index_meta_path
+
+logger = logging.getLogger(__name__)
 
 # A coarse floor, not a relevance oracle. xkcd covers nearly every topic, so even
 # loosely-related queries return a thematically-adjacent comic at ~0.6+. The fine
@@ -55,6 +58,9 @@ class Searcher:
         self.nums: list[int] = meta["nums"]
         self.matrix: np.ndarray = np.load(embeddings_path())
         self.comics = load_cache()
+        logger.info(
+            "Loaded index: %d comics (model %s)", len(self.nums), meta.get("model")
+        )
 
     def search(
         self,
@@ -64,6 +70,7 @@ class Searcher:
     ) -> list[Match]:
         text = (text or "").strip()
         if not text:
+            logger.debug("empty query; returning no results")
             return []
 
         q = embed.embed_query(text)
@@ -94,6 +101,22 @@ class Searcher:
             )
             if len(results) >= max_results:
                 break
+
+        if results:
+            top = results[0]
+            logger.info(
+                "search %r -> %d result(s); top #%d %r @%.3f",
+                text[:100],
+                len(results),
+                top.num,
+                top.title,
+                top.score,
+            )
+        else:
+            logger.info(
+                "search %r -> no match (best < min_score=%.2f)", text[:100], min_score
+            )
+        logger.debug("results: %s", [(m.num, m.score) for m in results])
         return results
 
 

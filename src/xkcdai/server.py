@@ -11,11 +11,31 @@ Two transports, selected by the ``XKCDAI_TRANSPORT`` environment variable:
 
 from __future__ import annotations
 
+import logging
 import os
 
 from mcp.server.fastmcp import FastMCP
 
 from .search import DEFAULT_MIN_SCORE, get_searcher
+
+
+def _configure_logging() -> None:
+    """Surface xkcdai.* logs (incl. each search) on stderr.
+
+    The CLI sets up logging itself; the server is launched by a host (Claude
+    Desktop/Code, or uvicorn when hosted), so we configure the package logger
+    here. stderr is mandatory: in stdio mode stdout carries the MCP protocol.
+    Set XKCDAI_VERBOSE=1 for DEBUG detail. We own the ``xkcdai`` logger (and don't
+    propagate) so uvicorn's logging config can't suppress or duplicate it.
+    """
+    level = logging.DEBUG if os.environ.get("XKCDAI_VERBOSE") else logging.INFO
+    pkg = logging.getLogger("xkcdai")
+    pkg.setLevel(level)
+    if not pkg.handlers:
+        handler = logging.StreamHandler()  # defaults to stderr
+        handler.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
+        pkg.addHandler(handler)
+    pkg.propagate = False
 
 
 # host/port only matter for the HTTP transport; harmless for stdio.
@@ -71,6 +91,7 @@ def find_xkcd(
 
 
 def main() -> None:
+    _configure_logging()
     transport = os.environ.get("XKCDAI_TRANSPORT", "stdio").lower().replace("_", "-")
     if transport in ("http", "streamable-http"):
         mcp.run(transport="streamable-http")

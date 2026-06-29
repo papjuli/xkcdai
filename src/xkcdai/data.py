@@ -16,12 +16,15 @@ Note: the official xkcd API stopped including transcripts around comic ~1675, so
 from __future__ import annotations
 
 import json
+import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import httpx
 from tqdm import tqdm
 
 from .paths import comics_path
+
+logger = logging.getLogger(__name__)
 
 LATEST_URL = "https://xkcd.com/info.0.json"
 COMIC_URL = "https://xkcd.com/{num}/info.0.json"
@@ -72,10 +75,12 @@ def _fetch_one(client: httpx.Client, num: int) -> dict | None:
     try:
         resp = client.get(COMIC_URL.format(num=num), timeout=30)
         if resp.status_code == 404:
+            logger.debug("comic #%d returned 404 (skipped)", num)
             return None
         resp.raise_for_status()
         return _slim(resp.json())
-    except (httpx.HTTPError, json.JSONDecodeError):
+    except (httpx.HTTPError, json.JSONDecodeError) as e:
+        logger.warning("failed to fetch comic #%d: %s", num, e)
         return None
 
 
@@ -96,19 +101,28 @@ def update_cache(workers: int = 16, force: bool = False) -> dict[int, dict]:
         ]
 
         if not missing:
-            print(f"Cache is up to date ({len(cached)} comics, latest #{latest}).")
+            logger.info(
+                "Comic cache is up to date (%d comics, latest #%d).", len(cached), latest
+            )
             return cached
 
-        print(f"Fetching {len(missing)} new comic(s) (latest is #{latest})...")
+        logger.info(
+            "Fetching %d new comic(s) (latest is #%d)...", len(missing), latest
+        )
+        failed = 0
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures = {pool.submit(_fetch_one, client, n): n for n in missing}
             for fut in tqdm(as_completed(futures), total=len(futures), unit="comic"):
                 doc = fut.result()
                 if doc is not None:
                     cached[int(doc["num"])] = doc
+                else:
+                    failed += 1
 
+    if failed:
+        logger.warning("%d comic(s) could not be fetched (re-run to retry).", failed)
     save_cache(cached)
-    print(f"Cached {len(cached)} comics -> {comics_path()}")
+    logger.info("Cached %d comics -> %s", len(cached), comics_path())
     return cached
 
 

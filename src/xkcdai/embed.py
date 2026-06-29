@@ -11,7 +11,11 @@ and ``query_embed``. Swapping the model is a one-line change to ``MODEL_NAME``.
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 MODEL_NAME = "BAAI/bge-small-en-v1.5"  # 384-dim, good quality/size tradeoff
 EMBED_DIM = 384
@@ -29,6 +33,7 @@ def _get_model():
         # FASTEMBED_CACHE_DIR lets a container bake the model into a stable path at
         # build time (see Dockerfile), avoiding a download on every cold start.
         cache_dir = os.environ.get("FASTEMBED_CACHE_DIR") or None
+        logger.debug("loading embedding model %s (cache_dir=%s)", MODEL_NAME, cache_dir)
         _model = TextEmbedding(model_name=MODEL_NAME, cache_dir=cache_dir)
     return _model
 
