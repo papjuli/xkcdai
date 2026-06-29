@@ -1,9 +1,5 @@
 """Pull extra context for each comic from explainxkcd.com.
 
-The official xkcd API stopped including transcripts around comic ~1675, which is
-exactly where semantic matching falls apart for newer (often most-shared) comics:
-the joke text lives inside the image and we have nothing to embed.
-
 explainxkcd.com is a community MediaWiki that, for nearly every comic, has both a
 **Transcript** (the literal panel text) and an **Explanation** (what the comic is
 actually about). Both are excellent material for semantic search. We fetch the raw
@@ -71,18 +67,18 @@ def _section(wikitext: str, name: str) -> str:
 
 def _strip_markup(text: str) -> str:
     """Reduce wikitext to plain-ish text good enough for embedding."""
-    text = re.sub(r"<!--.*?-->", " ", text, flags=re.DOTALL)        # comments
-    text = re.sub(r"\{\{[^{}]*\}\}", " ", text)                      # simple templates
-    text = re.sub(r"\{\{[^{}]*\}\}", " ", text)                      # nested (2nd pass)
-    text = re.sub(r"\[\[File:[^\]]*\]\]", " ", text, flags=re.I)     # images
-    text = re.sub(r"\[\[Category:[^\]]*\]\]", " ", text, flags=re.I) # categories
-    text = re.sub(r"\[\[[^\]|]*\|([^\]]*)\]\]", r"\1", text)         # [[link|label]]
-    text = re.sub(r"\[\[([^\]]*)\]\]", r"\1", text)                  # [[link]]
-    text = re.sub(r"\[https?://\S+\s+([^\]]*)\]", r"\1", text)       # [url label]
-    text = re.sub(r"\[https?://\S+\]", " ", text)                    # [url]
-    text = re.sub(r"</?[^>]+>", " ", text)                           # html tags
-    text = re.sub(r"'''?", "", text)                                 # bold/italic
-    text = re.sub(r"^[*#:;]+", "", text, flags=re.MULTILINE)         # list/indent markers
+    text = re.sub(r"<!--.*?-->", " ", text, flags=re.DOTALL)  # comments
+    text = re.sub(r"\{\{[^{}]*\}\}", " ", text)  # simple templates
+    text = re.sub(r"\{\{[^{}]*\}\}", " ", text)  # nested (2nd pass)
+    text = re.sub(r"\[\[File:[^\]]*\]\]", " ", text, flags=re.I)  # images
+    text = re.sub(r"\[\[Category:[^\]]*\]\]", " ", text, flags=re.I)  # categories
+    text = re.sub(r"\[\[[^\]|]*\|([^\]]*)\]\]", r"\1", text)  # [[link|label]]
+    text = re.sub(r"\[\[([^\]]*)\]\]", r"\1", text)  # [[link]]
+    text = re.sub(r"\[https?://\S+\s+([^\]]*)\]", r"\1", text)  # [url label]
+    text = re.sub(r"\[https?://\S+\]", " ", text)  # [url]
+    text = re.sub(r"</?[^>]+>", " ", text)  # html tags
+    text = re.sub(r"'''?", "", text)  # bold/italic
+    text = re.sub(r"^[*#:;]+", "", text, flags=re.MULTILINE)  # list/indent markers
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()

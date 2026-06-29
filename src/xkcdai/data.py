@@ -9,6 +9,8 @@ Each document includes ``num``, ``title``, ``alt`` (the mouseover text),
 ``transcript`` (present for most older comics), ``img``, and the date. We cache
 everything to ``comics.json`` and only fetch numbers we don't already have, so
 re-running ``build`` after a few new comics is cheap.
+
+Note: the official xkcd API stopped including transcripts around comic ~1675, so we fetch them from explainxkcd instead (see ``explain.py``).
 """
 
 from __future__ import annotations
