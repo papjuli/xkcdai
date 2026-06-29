@@ -183,3 +183,26 @@ xkcdai build
 
 Use `--force` to rebuild everything from scratch, or `--no-enrich` to skip the
 explainxkcd fetch. `xkcdai enrich` fetches only the explainxkcd context.
+
+
+## Credits & licensing
+
+This project bundles content from two sources, each under its own license, so the
+**code** and the **data** are licensed separately:
+
+- **Code** (`src/`, `Dockerfile`, etc.) — [MIT](LICENSE).
+- **Comics & mouseover text** — © [Randall Munroe / xkcd](https://xkcd.com),
+  licensed [CC BY-NC 2.5](https://xkcd.com/license.html): **non-commercial**, with
+  attribution.
+- **Transcripts & explanations** (cached in [data/](data/)) — from
+  [explainxkcd.com](https://www.explainxkcd.com), licensed
+  [CC BY-SA 3.0](https://www.explainxkcd.com/wiki/index.php/explain_xkcd:Copyrights):
+  redistributed here under the same license, with attribution.
+
+Because `data/` mixes xkcd's NonCommercial content with explainxkcd's ShareAlike
+content, treat the **data as non-commercial** and keep any redistribution under
+these terms. The MIT license covers the source code only — not `data/`. At
+runtime, `find_xkcd` results link back to both xkcd and explainxkcd for per-item
+attribution.
+
+This is an unofficial fan project, not affiliated with or endorsed by xkcd or explainxkcd.
