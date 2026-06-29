@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "An MCP server that suggests a relevant xkcd comic during a conversation, using semantic search."
 readme = "README.md"
 requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Julia Pap", email = "papjuli@gmail.com" }]
 dependencies = [
     "mcp[cli]>=1.2.0",
     "fastembed>=0.3.0",
