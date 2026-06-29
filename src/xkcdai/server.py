@@ -6,7 +6,7 @@ Two transports, selected by the ``XKCDAI_TRANSPORT`` environment variable:
     launch this as a subprocess.  ``python -m xkcdai.server``
   * ``streamable-http`` — for hosting publicly so it can be added as a Claude
     *custom connector* (works on the web + mobile apps). Binds ``0.0.0.0:$PORT``
-    and serves MCP at ``/mcp``. See the Dockerfile and README "Share it" section.
+    and serves MCP at ``/mcp``. See the Dockerfile and the README.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ import os
 from mcp.server.fastmcp import FastMCP
 
 from .search import DEFAULT_MIN_SCORE, get_searcher
+
 
 # host/port only matter for the HTTP transport; harmless for stdio.
 mcp = FastMCP(
@@ -49,7 +50,6 @@ def find_xkcd(
         0.66 - 0.75    plausible — mention only if it genuinely lands
         < 0.66         weak/tangential — almost always better to stay silent
     Only one comic, at most, per topic — and only when it actually adds something.
-    When in doubt, say nothing; a forced reference is worse than none.
 
     When you do share one, cite it by number and title with its `url`, and quote
     the `alt` (mouseover) text — it's half the joke.
