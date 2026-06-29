@@ -149,6 +149,21 @@ It's still Claude's judgment, so it won't fire on every borderline topic — ask
 *"is there an xkcd for this?"* always triggers a lookup.
 
 
+## Not just Claude — works with any MCP client
+
+The examples above use Claude, but `find_xkcd` is a standard
+[Model Context Protocol](https://modelcontextprotocol.io) tool, so any MCP-capable
+host can use it. Point the client at either transport:
+
+- **stdio:** run `xkcdai-server` locally (see [Use locally as an MCP server](#use-locally-as-an-mcp-server)), or
+- **HTTP:** the deployed URL `https://xkcdai.onrender.com/mcp`.
+
+The server is **LLM-agnostic** internally, too: matching runs on a local embedding model.
+Only the host-specific bits differ — how you register the server, and where you put
+the "suggest a comic when it fits" instruction (each client has its own
+system-prompt / rules mechanism, e.g. Cursor Rules or a VS Code `.instructions` file).
+
+
 ## Configuration
 
 - `XKCDAI_DATA_DIR` — where `comics.json`, `explain.json`, `embeddings.npy`, and
