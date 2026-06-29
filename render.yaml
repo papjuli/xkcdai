@@ -12,3 +12,5 @@ services:
       # Serve MCP over HTTP at /mcp (also set in the Dockerfile; explicit here too).
       - key: XKCDAI_TRANSPORT
         value: streamable-http
+      - key: XKCDAI_VERBOSE
+        value: "1"

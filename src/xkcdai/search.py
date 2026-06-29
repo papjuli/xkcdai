@@ -105,17 +105,14 @@ class Searcher:
         if results:
             top = results[0]
             logger.info(
-                "search %r -> %d result(s); top #%d %r @%.3f",
-                text[:100],
+                "search -> %d result(s); top #%d %r @%.3f",
                 len(results),
                 top.num,
                 top.title,
                 top.score,
             )
         else:
-            logger.info(
-                "search %r -> no match (best < min_score=%.2f)", text[:100], min_score
-            )
+            logger.info("search -> no match (best < min_score=%.2f)", min_score)
         logger.debug("results: %s", [(m.num, m.score) for m in results])
         return results
 
