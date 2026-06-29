@@ -74,17 +74,12 @@ python -m venv .venv
 # macOS/Linux:           source .venv/bin/activate
 pip install -e .
 
-# 1. Fetch every comic's metadata.
-xkcdai build
-
-# 2. Fetch transcripts + explanations from explainxkcd (~2 min).
-xkcdai enrich
-
-# 3. Build the embedding index (downloads the model once; ~5-8 min to embed).
+# Fetch comics + their explainxkcd context, then embed (downloads the model once).
+# First run ~10 min; re-running later only fetches what's new.
 xkcdai build
 ```
 
-Re-running later only fetches what's new.
+Add `--no-enrich` to skip the explainxkcd fetch (faster/offline, weaker matches).
 
 Test it from the command line:
 
@@ -164,12 +159,12 @@ It's still Claude's judgment, so it won't fire on every borderline topic — ask
 
 ## Maintenance
 
-Pick up new comics periodically (both steps are incremental):
+Re-run `xkcdai build` periodically to pick up new comics — it incrementally fetches
+new comics and their explainxkcd context, then re-embeds:
 
 ```bash
-xkcdai enrich     # new explainxkcd context
-xkcdai build      # fetch new comics + re-embed
+xkcdai build
 ```
 
-Use `xkcdai build --enrich` to do both in one go, or `--force` on either command
-to rebuild everything from scratch.
+Use `--force` to rebuild everything from scratch, or `--no-enrich` to skip the
+explainxkcd fetch. `xkcdai enrich` fetches only the explainxkcd context.

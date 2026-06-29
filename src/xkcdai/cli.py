@@ -1,14 +1,14 @@
 """Command-line interface for building the index and testing searches.
 
-    xkcdai enrich              # fetch transcripts/explanations from explainxkcd
-    xkcdai build               # fetch new comics + (re)build the embedding index
-    xkcdai build --enrich      # run enrich first, then build
-    xkcdai build --force       # re-download everything and rebuild from scratch
+    xkcdai build               # fetch comics + explainxkcd context, then (re)embed
+    xkcdai build --no-enrich   # skip explainxkcd fetch (faster/offline; weaker matches)
+    xkcdai build --force       # re-download all comics and rebuild from scratch
+    xkcdai enrich              # only fetch transcripts/explanations from explainxkcd
     xkcdai search "my code finally compiled"
     xkcdai search "git merge conflict" --min-score 0.5 --max-results 5
 
-Recommended first run:  xkcdai build  &&  xkcdai enrich  &&  xkcdai build
-(or simply:  xkcdai build --enrich  on the second pass)
+`xkcdai build` is all you need for first run and for picking up new comics — it
+fetches comics, then their explainxkcd context, then embeds (all incremental).
 """
 
 from __future__ import annotations
@@ -28,10 +28,7 @@ def _cmd_enrich(args: argparse.Namespace) -> int:
 
 
 def _cmd_build(args: argparse.Namespace) -> int:
-    if getattr(args, "enrich", False):
-        update_explain()
-
-    count = build(force_fetch=args.force)
+    count = build(force_fetch=args.force, enrich=not args.no_enrich)
     print(f"Done. Indexed {count} comics.")
     return 0
 
@@ -62,14 +59,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_enrich.set_defaults(func=_cmd_enrich)
 
-    p_build = sub.add_parser("build", help="fetch comics and build the embedding index")
+    p_build = sub.add_parser(
+        "build", help="fetch comics + explainxkcd context and build the index"
+    )
     p_build.add_argument(
         "--force", action="store_true", help="re-download all comics before indexing"
     )
     p_build.add_argument(
-        "--enrich",
+        "--no-enrich",
         action="store_true",
-        help="fetch explainxkcd context before building",
+        help="skip the explainxkcd fetch (faster/offline; weaker matches)",
     )
     p_build.set_defaults(func=_cmd_build)
 

@@ -16,7 +16,7 @@ import numpy as np
 
 from . import embed
 from .data import document_text, update_cache
-from .explain import load_explain
+from .explain import load_explain, update_explain
 from .paths import embeddings_path, index_meta_path
 
 
@@ -45,14 +45,18 @@ def build_document(comic: dict, explain_entry: dict | None) -> str:
     return "\n".join(p for p in parts if p).strip()
 
 
-def build(force_fetch: bool = False) -> int:
-    """Fetch (if needed), embed all comics, and write the index. Returns count."""
+def build(force_fetch: bool = False, enrich: bool = True) -> int:
+    """Fetch (if needed), embed all comics, and write the index. Returns count.
+
+    With ``enrich=True`` (the default) explainxkcd context is fetched after the
+    comics, so brand-new comics get their transcript/explanation before embedding.
+    Pass ``enrich=False`` to skip the explainxkcd network calls and embed with only
+    whatever context is already cached (faster/offline, but weaker matches).
+    """
     comics = update_cache(force=force_fetch)
-    explain = load_explain()
-    if explain:
-        print(f"Using explainxkcd context for {len(explain)} comics.")
-    else:
-        print("No explainxkcd context found — run `xkcdai enrich` for better matches.")
+    explain = update_explain() if enrich else load_explain()
+    if not explain:
+        print("No explainxkcd context — matches will be weaker. (Drop --no-enrich.)")
 
     nums: list[int] = []
     texts: list[str] = []
