@@ -16,10 +16,12 @@ from __future__ import annotations
 import argparse
 import sys
 
+from .explain import update_explain
+from .index import build
+from .search import DEFAULT_MIN_SCORE, get_searcher
+
 
 def _cmd_enrich(args: argparse.Namespace) -> int:
-    from .explain import update_explain
-
     data = update_explain(force=args.force)
     print(f"Done. explainxkcd context for {len(data)} comics.")
     return 0
@@ -27,10 +29,7 @@ def _cmd_enrich(args: argparse.Namespace) -> int:
 
 def _cmd_build(args: argparse.Namespace) -> int:
     if getattr(args, "enrich", False):
-        from .explain import update_explain
-
         update_explain()
-    from .index import build
 
     count = build(force_fetch=args.force)
     print(f"Done. Indexed {count} comics.")
@@ -38,8 +37,6 @@ def _cmd_build(args: argparse.Namespace) -> int:
 
 
 def _cmd_search(args: argparse.Namespace) -> int:
-    from .search import get_searcher
-
     matches = get_searcher().search(
         args.text, max_results=args.max_results, min_score=args.min_score
     )
@@ -70,7 +67,9 @@ def main(argv: list[str] | None = None) -> int:
         "--force", action="store_true", help="re-download all comics before indexing"
     )
     p_build.add_argument(
-        "--enrich", action="store_true", help="fetch explainxkcd context before building"
+        "--enrich",
+        action="store_true",
+        help="fetch explainxkcd context before building",
     )
     p_build.set_defaults(func=_cmd_build)
 
@@ -82,11 +81,7 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
-    # Resolve the default min-score lazily so importing search (and the model) is
-    # deferred until actually needed.
     if getattr(args, "command", None) == "search" and args.min_score is None:
-        from .search import DEFAULT_MIN_SCORE
-
         args.min_score = DEFAULT_MIN_SCORE
 
     return args.func(args)
