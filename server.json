@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.papjuli/xkcdai",
+  "title": "xkcd Comic Suggester",
+  "description": "Suggests a relevant xkcd comic during a conversation, via semantic search over every comic.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/papjuli/xkcdai",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://xkcdai.onrender.com/mcp"
+    }
+  ]
+}
