@@ -35891,5 +35891,71 @@
 "year": "2026",
 "month": "6",
 "day": "26"
+},
+"3265": {
+"num": 3265,
+"title": "Asteroid Threat",
+"safe_title": "Asteroid Threat",
+"alt": "Paleontologists have long worried that the dinosaurs blasted into space 66 million years ago will one day complete their orbits and fall back down.",
+"transcript": "",
+"img": "https://imgs.xkcd.com/comics/asteroid_threat.png",
+"year": "2026",
+"month": "6",
+"day": "29"
+},
+"3266": {
+"num": 3266,
+"title": "Holes",
+"safe_title": "Holes",
+"alt": "If you're thinking 'Wait, a giant crystal cave in Mexico? What's that?' then I'm SO excited for the image search you're about to do.",
+"transcript": "",
+"img": "https://imgs.xkcd.com/comics/holes.png",
+"year": "2026",
+"month": "7",
+"day": "1"
+},
+"3267": {
+"num": 3267,
+"title": "Types of Tornado Alert",
+"safe_title": "Types of Tornado Alert",
+"alt": "I hate the unearthly sound my phone makes when the weather service issues a tornado harbinger.",
+"transcript": "",
+"img": "https://imgs.xkcd.com/comics/types_of_tornado_alert.png",
+"year": "2026",
+"month": "7",
+"day": "3"
+},
+"3268": {
+"num": 3268,
+"title": "Offside",
+"safe_title": "Offside",
+"alt": "The arbiter gave my knight a red card for capturing with cleats up :(",
+"transcript": "",
+"img": "https://imgs.xkcd.com/comics/offside.png",
+"year": "2026",
+"month": "7",
+"day": "6"
+},
+"3269": {
+"num": 3269,
+"title": "Airport Meeting",
+"safe_title": "Airport Meeting",
+"alt": "Although it was a setback for physics, I'm glad the particle naming rights issue led to the cancelation of Pizza Hut's Superconducting Super Collider in the early 90s, so the Double Stuffed Extra Cheese Topping Quark ended up just being named 'top quark.'",
+"transcript": "",
+"img": "https://imgs.xkcd.com/comics/airport_meeting.png",
+"year": "2026",
+"month": "7",
+"day": "8"
+},
+"3270": {
+"num": 3270,
+"title": "Toasting Marshmallows",
+"safe_title": "Toasting Marshmallows",
+"alt": "We have two 'in case of fire, break glass' boxes, which you pick between based on how big of a problem the fire is. One has an extinguisher, and one has sticks, marshmallows, graham crackers, and chocolate.",
+"transcript": "",
+"img": "https://imgs.xkcd.com/comics/toasting_marshmallows.png",
+"year": "2026",
+"month": "7",
+"day": "10"
 }
 }
