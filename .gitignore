@@ -1,6 +1,3 @@
-# Generated data (regenerate with `xkcdai build`)
-data/
-
 # Python
 .venv/
 venv/
