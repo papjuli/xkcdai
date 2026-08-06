@@ -10,6 +10,18 @@ ENV PYTHONUNBUFFERED=1 \
     HF_HUB_DISABLE_SYMLINKS_WARNING=1 \
     PORT=8000
 
+# A container sees the *host's* core count, so these pools would otherwise be
+# sized for a machine we don't have. 
+# Serving is one 3269x384 matrix-vector product and one embedding per query, 
+# so a single thread is plenty. XKCDAI_ORT_THREADS covers ONNX Runtime, 
+# which uses its own pool rather than OpenMP; the rest cover numpy/BLAS. 
+# Set here and not in the code so that `xkcdai build` can use all the cores 
+# it can get.
+ENV OMP_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1 \
+    XKCDAI_ORT_THREADS=1
+
 WORKDIR /app
 
 # Apply available OS security patches on top of the base image, then drop apt's
