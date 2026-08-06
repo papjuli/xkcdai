@@ -41,7 +41,15 @@ def _get_model():
         opts: dict[str, Any] = {}
         threads = os.environ.get("XKCDAI_ORT_THREADS")
         if threads:
-            opts["threads"] = int(threads)
+            try:
+                threads = int(threads)
+            except ValueError:
+                logger.warning(
+                    "XKCDAI_ORT_THREADS=%r is not an integer; ignoring", threads
+                )
+                threads = None
+        if threads:
+            opts["threads"] = threads
             opts["enable_cpu_mem_arena"] = False
 
         logger.debug(

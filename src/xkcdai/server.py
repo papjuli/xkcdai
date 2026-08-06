@@ -19,7 +19,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from . import __version__
-from .search import DEFAULT_MIN_SCORE, get_searcher
+from .search import DEFAULT_MIN_SCORE, get_searcher, is_searcher_loaded
 
 logger = logging.getLogger("xkcdai.server")
 
@@ -110,7 +110,7 @@ def find_xkcd(
 
 
 @mcp.custom_route("/healthz", methods=["GET"])
-async def healthz(request: Request) -> JSONResponse:
+async def healthz(_request: Request) -> JSONResponse:
     """Liveness probe that also reports the footprint.
 
     Tells you whether the process is up, which build is
@@ -126,16 +126,10 @@ async def healthz(request: Request) -> JSONResponse:
         {
             "status": "ok",
             "version": __version__,
-            "index_loaded": _searcher_is_loaded(),
+            "index_loaded": is_searcher_loaded(),
             "rss_mb": _rss_mb(),
         }
     )
-
-
-def _searcher_is_loaded() -> bool:
-    from . import search
-
-    return search._searcher is not None
 
 
 def _rss_mb() -> float | None:
@@ -163,7 +157,7 @@ def _warm_up() -> None:
         logger.warning("warm-up skipped: %s", e)
         return
     rss = _rss_mb()
-    logger.info("Warm-up complete%s", f" (RSS {rss:.0f} MB)" if rss else "")
+    logger.info("Warm-up complete%s", f" (RSS {rss:.0f} MB)" if rss is not None else "")
 
 
 def main() -> None:
