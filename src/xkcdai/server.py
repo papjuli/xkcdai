@@ -15,34 +15,53 @@ import logging
 import os
 
 from mcp.server.fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
+from . import __version__
 from .search import DEFAULT_MIN_SCORE, get_searcher
+
+logger = logging.getLogger("xkcdai.server")
 
 
 def _configure_logging() -> None:
-    """Surface xkcdai.* logs (incl. each search) on stderr.
+    """Surface xkcdai.* logs (incl. each search) on stderr, one line per record.
 
     The CLI sets up logging itself; the server is launched by a host (Claude
     Desktop/Code, or uvicorn when hosted), so we configure the package logger
     here. stderr is mandatory: in stdio mode stdout carries the MCP protocol.
     Set XKCDAI_VERBOSE=1 for DEBUG detail. We own the ``xkcdai`` logger (and don't
     propagate) so uvicorn's logging config can't suppress or duplicate it.
+
+    We also take the root logger back from FastMCP and reset the handler to a plain one, which keeps one record on one line.
     """
     level = logging.DEBUG if os.environ.get("XKCDAI_VERBOSE") else logging.INFO
+
+    root_handler = logging.StreamHandler()  # defaults to stderr
+    root_handler.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
+    # force=True drops the handlers FastMCP already installed, RichHandler included.
+    logging.basicConfig(level=logging.INFO, handlers=[root_handler], force=True)
+
     pkg = logging.getLogger("xkcdai")
     pkg.setLevel(level)
     if not pkg.handlers:
-        handler = logging.StreamHandler()  # defaults to stderr
+        handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
         pkg.addHandler(handler)
     pkg.propagate = False
 
 
 # host/port only matter for the HTTP transport; harmless for stdio.
+# stateless_http/json_response likewise: find_xkcd keeps no per-client state, so
+# sessions would only pile up (the SDK drops them on an explicit DELETE that real
+# clients rarely send) until the instance OOMs, and a session id bound to a dead
+# process 404s every client after a restart.
 mcp = FastMCP(
     "xkcdai",
     host=os.environ.get("HOST", "0.0.0.0"),
     port=int(os.environ.get("PORT", "8000")),
+    stateless_http=True,
+    json_response=True,
 )
 
 
@@ -90,15 +109,74 @@ def find_xkcd(
     }
 
 
+@mcp.custom_route("/healthz", methods=["GET"])
+async def healthz(request: Request) -> JSONResponse:
+    """Liveness probe that also reports the footprint.
+
+    Tells you whether the process is up, which build is
+    answering, whether the index actually loaded,
+    and what it currently weighs.
+    ``version`` is xkcdai's (note that the MCP handshake's
+    ``serverInfo.version`` reports the SDK's version).
+
+    ``request`` is unused but required: custom_route hands every handler the
+    Starlette request.
+    """
+    return JSONResponse(
+        {
+            "status": "ok",
+            "version": __version__,
+            "index_loaded": _searcher_is_loaded(),
+            "rss_mb": _rss_mb(),
+        }
+    )
+
+
+def _searcher_is_loaded() -> bool:
+    from . import search
+
+    return search._searcher is not None
+
+
+def _rss_mb() -> float | None:
+    """Resident set size in MB, or None where we can't cheaply tell (non-Linux)."""
+    try:
+        with open("/proc/self/status", encoding="utf-8") as fh:
+            for line in fh:
+                if line.startswith("VmRSS:"):
+                    return int(line.split()[1]) / 1024
+    except OSError:
+        pass
+    return None
+
+
+def _warm_up() -> None:
+    """Load the model and index now rather than during the first tool call.
+
+    Everything the server needs is baked into the image, so this is fast — but it
+    also pins down the steady-state footprint at boot, where it's visible in the
+    logs, instead of letting it appear mid-request on a memory-tight instance.
+    """
+    try:
+        get_searcher().search("warm up the embedding model")
+    except (FileNotFoundError, RuntimeError) as e:
+        logger.warning("warm-up skipped: %s", e)
+        return
+    rss = _rss_mb()
+    logger.info("Warm-up complete%s", f" (RSS {rss:.0f} MB)" if rss else "")
+
+
 def main() -> None:
     _configure_logging()
     transport = os.environ.get("XKCDAI_TRANSPORT", "stdio").lower().replace("_", "-")
     if transport in ("http", "streamable-http"):
+        _warm_up()
         mcp.run(transport="streamable-http")
     elif transport == "sse":
+        _warm_up()
         mcp.run(transport="sse")
     else:
-        mcp.run()  # stdio
+        mcp.run()  # stdio: stay lazy so the host's launch isn't blocked
 
 
 if __name__ == "__main__":
