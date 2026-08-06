@@ -60,10 +60,13 @@ In **claude.ai** (web — do this once; it then syncs to the mobile app):
 **Notes**
 - The server is **public and unauthenticated** — fine here (read-only comic search,
   no secrets). Don't reuse this pattern for anything sensitive without OAuth.
-- A free Render instance sleeps when idle, so the first request after a nap is
-  slow (cold start + model load), then snappy.
 - Hosted from this repo via the [Dockerfile](Dockerfile) and [render.yaml](render.yaml);
   pushes to `main` auto-redeploy.
+- `GET /healthz` reports liveness, whether the index is loaded, and current RSS —
+  handy on a 512 MB instance:
+  ```bash
+  curl https://xkcdai.onrender.com/healthz
+  ```
 
 
 ## Local setup

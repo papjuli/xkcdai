@@ -1,6 +1,6 @@
 [project]
 name = "xkcdai"
-version = "0.1.0"
+version = "0.2.0"
 description = "An MCP server that suggests a relevant xkcd comic during a conversation, using semantic search."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -9,6 +9,9 @@ license-files = ["LICENSE"]
 authors = [{ name = "Julia Pap", email = "papjuli@gmail.com" }]
 dependencies = [
     "mcp[cli]>=1.2.0",
+    # Already guaranteed by mcp, but server.py imports it
+    # directly, so declare what we actually use.
+    "starlette>=0.27",
     "fastembed>=0.3.0",
     "numpy>=1.24",
     "httpx>=0.27",

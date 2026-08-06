@@ -12,6 +12,7 @@ and ``query_embed``. Swapping the model is a one-line change to ``MODEL_NAME``.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
 
@@ -33,8 +34,31 @@ def _get_model():
         # FASTEMBED_CACHE_DIR lets a container bake the model into a stable path at
         # build time (see Dockerfile), avoiding a download on every cold start.
         cache_dir = os.environ.get("FASTEMBED_CACHE_DIR") or None
-        logger.debug("loading embedding model %s (cache_dir=%s)", MODEL_NAME, cache_dir)
-        _model = TextEmbedding(model_name=MODEL_NAME, cache_dir=cache_dir)
+
+        # XKCDAI_ORT_THREADS opts into a small-instance profile (the Dockerfile
+        # sets it): cap ONNX Runtime's thread pool and drop its allocation arena.
+        # Unset by default — `xkcdai build` wants every core it can get.
+        opts: dict[str, Any] = {}
+        threads = os.environ.get("XKCDAI_ORT_THREADS")
+        if threads:
+            try:
+                threads = int(threads)
+            except ValueError:
+                logger.warning(
+                    "XKCDAI_ORT_THREADS=%r is not an integer; ignoring", threads
+                )
+                threads = None
+        if threads:
+            opts["threads"] = threads
+            opts["enable_cpu_mem_arena"] = False
+
+        logger.debug(
+            "loading embedding model %s (cache_dir=%s, opts=%s)",
+            MODEL_NAME,
+            cache_dir,
+            opts or "onnxruntime defaults",
+        )
+        _model = TextEmbedding(model_name=MODEL_NAME, cache_dir=cache_dir, **opts)
     return _model
 
 

@@ -3,7 +3,7 @@
   "name": "io.github.papjuli/xkcdai",
   "title": "xkcd Comic Suggester",
   "description": "Suggests a relevant xkcd comic during a conversation, via semantic search over every comic.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "repository": {
     "url": "https://github.com/papjuli/xkcdai",
     "source": "github"

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 
 import numpy as np
 
@@ -126,3 +126,8 @@ def get_searcher() -> Searcher:
     if _searcher is None:
         _searcher = Searcher()
     return _searcher
+
+
+def is_searcher_loaded() -> bool:
+    """Whether the index is loaded (True) or not (False)."""
+    return _searcher is not None
